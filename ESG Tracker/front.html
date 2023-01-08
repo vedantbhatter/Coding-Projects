@@ -1,0 +1,172 @@
+<!-- index.html -->
+<html>
+  <head>
+    <title>ESG Investment Tracker</title>
+    <style>
+      /* Add some basic styling */
+      body {
+        font-family: sans-serif;
+      }
+      table {
+        border-collapse: collapse;
+      }
+      td, th {
+        border: 1px solid #ccc;
+        padding: 8px;
+      }
+      th {
+        background-color: #ddd;
+      }
+      .error {
+        color: red;
+      }
+    </style>
+  </head>
+  <body>
+    <h1>ESG Investment Tracker</h1>
+    <!-- Display a table of investments -->
+    <table id="investments">
+      <thead>
+        <tr>
+          <th>ID</th>
+          <th>Investor</th>
+          <th>Name</th>
+          <th>Ticker</th>
+          <th>Carbon Emissions (kg CO2e)</th>
+          <th>Diversity Score</th>
+          <th>Governance Score</th>
+        </tr>
+      </thead>
+      <tbody id="investments-body">
+        <!-- Investment rows will be added here -->
+      </tbody>
+    </table>
+    <!-- Display a form for adding new investments -->
+    <h2>Add Investment</h2>
+    <form id="add-investment-form">
+      <label for="name">Name:</label><br>
+      <input type="text" id="name" name="name"><br>
+      <label for="ticker">Ticker:</label><br>
+      <input type="text" id="ticker" name="ticker"><br>
+      <button type="submit">Add Investment</button>
+      <span class="error" id="add-error"></span>
+    </form>
+    <!-- Display a form for adding ESG data -->
+    <h2>Add ESG Data</h2>
+    <form id="add-esg-form">
+      <label for="id">ID:</label><br>
+      <input type="text" id="id" name="id"><br>
+      <label for="carbon-emissions">Carbon Emissions (kg CO2e):</label><br>
+      <input type="text" id="carbon-emissions" name="carbon-emissions"><br>
+      <label for="diversity-score">Diversity Score:</label><br>
+      <input type="text" id="diversity-score" name="diversity-score"><br>
+      <label for="governance-score">Governance Score:</label><br>
+      <input type="text" id="governance-score" name="governance-score"><br>
+      <button type="submit">Add ESG Data</button>
+      <span class="error" id="esg-error"></span>
+    </form>
+    <!-- Load the web3 library and the contract -->
+    <script src="https://cdn.jsdelivr.net/npm/web3@latest/dist/web3.min.js"></script>
+    <script src="ESGTracker.json"></script>
+    <script>
+      // Set up the web3 provider
+      if (typeof web3 !== 'undefined') {
+        web3 = new Web3(web3.currentProvider);
+      } else {
+        // Set the provider you want from Web3.providers
+        web3 = new Web3(new Web3.providers.HttpProvider("http://localhost:8545"));
+      }
+      // Get the contract instance
+      var contract = new web3.eth.Contract(
+        JSON.parse(ESGTracker.abi),
+        "0x..." // Replace with the contract address
+      );
+      // Set the default account
+      web3.eth.defaultAccount = web3.eth.accounts[0];
+      // Get the investment count
+      contract.methods.investments().call((error, investments) => {
+        // Loop through the investments and add them to the table
+        for (var i = 0; i < investments.length; i++) {
+          addInvestmentRow(investments[i]);
+        }
+      });
+      // Add an investment row to the table
+      function addInvestmentRow(investment) {
+        // Create the table row
+        var row = document.createElement("tr");
+        // Add the cells to the row
+        row.innerHTML = `
+          <td>${investment.id}</td>
+          <td>${investment.investor}</td>
+          <td>${investment.name}</td>
+          <td>${investment.ticker}</td>
+          <td>${investment.carbonEmissions}</td>
+          <td>${investment.diversityScore}</td>
+          <td>${investment.governanceScore}</td>
+        `;
+        // Add the row to the table body
+      document.getElementById("investments-body").appendChild(row);
+    }
+    // Handle the form submission for adding an investment
+    document.getElementById("add-investment-form").addEventListener("submit", (event) => {
+      // Prevent the default form submission behavior
+      event.preventDefault();
+      // Get the form data
+      var name = document.getElementById("name").value;
+      var ticker = document.getElementById("ticker").value;
+      // Call the contract's addInvestment function
+      contract.methods.addInvestment(name, ticker).send({ from: web3.eth.defaultAccount }, (error, transactionHash) => {
+        if (error) {
+          // There was an error
+          document.getElementById("add-error").textContent = error.message;
+        } else {
+          // The transaction was successful
+          document.getElementById("add-error").textContent = "";
+          // Clear the form
+          document.getElementById("add-investment-form").reset();
+          // Add the investment to the table
+          contract.methods.investments(investments.length).call((error, investment) => {
+            addInvestmentRow(investment);
+          });
+        }
+      });
+    });
+    // Handle the form submission for adding ESG data
+    document.getElementById("add-esg-form").addEventListener("submit", (event) => {
+      // Prevent the default form submission behavior
+      event.preventDefault();
+      // Get the form data
+      var id = parseInt(document.getElementById("id").value);
+      var carbonEmissions = parseInt(document.getElementById("carbon-emissions").value);
+      var diversityScore = parseInt(document.getElementById("diversity-score").value);
+      var governanceScore = parseInt(document.getElementById("governance-score").value);
+      // Call the contract's addESGData function
+      contract.methods.addESGData(id, carbonEmissions, diversityScore, governanceScore).send({ from: web3.eth.defaultAccount }, (error, transactionHash) => {
+        if (error) {
+          // There was an error
+          document.getElementById("esg-error").textContent = error.message;
+        } else {
+          // The transaction was successful
+          document.getElementById("esg-error").textContent = "";
+          // Clear the form
+          document.getElementById("add-esg-form").reset();
+          // Update the table
+          contract.methods.investments(id).call((error, investment) => {
+            var row = document.getElementById(`investment-${id}`);
+            row.innerHTML = `
+              <td>${investment.id}</td>
+              <td>${investment.investor}</td>
+              <td>${investment.name}</td>
+              <td>${investment.ticker}</td>
+              <td>${investment.carbonEmissions}</td>
+              <td>${investment.diversityScore}</td>
+              <td>${investment.governanceScore}</td>
+            `;
+          });
+        }
+      });
+    });
+  </script>
+</body>
+</html>
+
