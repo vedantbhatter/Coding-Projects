@@ -36,7 +36,7 @@ contract ESGTracker {
   }
 
   // The constructor for the contract.
-  constructor() public {
+   constructor() public {
     owner = msg.sender;
   }
 
