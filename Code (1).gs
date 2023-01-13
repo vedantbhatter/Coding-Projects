@@ -1,5 +1,5 @@
 /**
- * Author: Karthik Sreedhar
+ * Author: Vedant Bhatter
  * Searches for emails from excel file in
  * organizational directory & outputs in
  * tabular format in google documents
